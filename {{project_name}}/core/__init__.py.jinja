@@ -1,0 +1,7 @@
+def update_instance(instance, payload):
+    data = payload.dict()
+
+    for attr, value in data.items():
+        setattr(instance, attr, value)
+
+    instance.save()

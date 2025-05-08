@@ -1,0 +1,15 @@
+project_name:
+    type: str
+    help: What is your project name?
+    default: apps
+
+_exclude:
+    - "copier.yaml"
+    - "copier.yml"
+    - "~*"
+    - "*.py[co]"
+    - "__pycache__"
+    - ".git"
+    - ".DS_Store"
+    - ".svn"
+    - ".venv"

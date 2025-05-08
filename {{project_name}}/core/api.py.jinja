@@ -1,0 +1,75 @@
+from http import HTTPStatus
+from django.shortcuts import get_object_or_404
+from ninja import Router
+from django.contrib.auth.models import User
+
+from .schemas import StatusSchema, UserInputSchema, UserSchema
+
+from . import update_instance
+
+
+router = Router(tags=['Core'])
+
+
+@router.get(
+    'healthcheck',
+    response=StatusSchema,
+    tags=['Health Check'],
+    summary='Health Check',
+    description='Verificação de status que permite monitorar a saúde da API.'
+)
+def healthcheck(request):
+    return HTTPStatus.OK, {'status': 'ok'}
+
+
+@router.get(
+    'users',
+    response=list[UserSchema],
+    summary='Listar Usuários',
+    description='Retorna uma lista com todos os usuários cadastrados no sistema.'
+)
+def list_users(request):
+    return User.objects.all()
+
+
+@router.get(
+    'users/{pk}',
+    response=UserSchema,
+    summary='Obter Usuário',
+    description='Retorna os detalhes de um usuário específico a partir do seu ID.'
+)
+def get_user(request, pk: int):
+    return get_object_or_404(User, pk=pk)
+
+
+@router.post(
+    'users',
+    response={HTTPStatus.CREATED: UserSchema},
+    summary='Criar Usuário',
+    description='Cria um novo usuário no sistema com base nos dados fornecidos.'
+)
+def create_user(request, payload: UserInputSchema):
+    return User.objects.create(**payload.dict())
+
+
+@router.patch(
+    'users/{pk}',
+    response=UserSchema,
+    summary='Atualizar Usuário',
+    description='Atualiza parcialmente os dados de um usuário específico a partir do seu ID.'
+)
+def update_user(request, pk: int, payload: UserInputSchema):
+    instance = get_object_or_404(User, pk=pk)
+    update_instance(instance, payload)
+    return instance
+
+
+@router.delete(
+    'users/{pk}',
+    summary='Excluir Usuário',
+    description='Remove permanentemente um usuário do sistema a partir do seu ID.'
+)
+def delete_user(request, pk: int):
+    instance = get_object_or_404(User, pk=pk)
+    instance.delete()
+    return {'success': True}

@@ -1,0 +1,22 @@
+from ninja import Field, ModelSchema, Schema
+
+from django.contrib.auth.models import User
+
+
+class StatusSchema(Schema):
+    status: str
+
+
+class UserSchema(ModelSchema):
+    full_name: str = Field(None, alias='get_full_name')
+    username: str = Field(None)
+
+    class Meta:
+        model = User
+        exclude = ['password', 'last_login', 'date_joined', 'user_permissions', 'groups']
+
+
+class UserInputSchema(ModelSchema):
+    class Meta:
+        model = User
+        fields = ['username', 'first_name', 'last_name', 'email']
