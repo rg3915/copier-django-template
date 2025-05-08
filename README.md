@@ -53,6 +53,12 @@ python manage.py createsuperuser --username="admin" --email=""
 python manage.py runserver
 ```
 
+### Docs
+
+Enter in
+
+http://localhost:8000/api/v1/docs
+
 ---
 
 ## 🇧🇷 Sobre
@@ -106,3 +112,10 @@ python manage.py createsuperuser --username="admin" --email=""
 ```bash
 python manage.py runserver
 ```
+
+### Docs
+
+Entre em
+
+http://localhost:8000/api/v1/docs
+
