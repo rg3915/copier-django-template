@@ -94,6 +94,18 @@ http://localhost:8000/api/v1/docs
 
 ![](img/swagger.png)
 
+### Plus
+
+If you want to run everything on Linux with a script, type
+
+```bash
+wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/ca066230e3051842b453ac72c415cb386ebc1925/script.py
+
+source script.sh
+```
+
+<script src="https://asciinema.org/a/M2GwBGMsWDJ7WLuW8fgkwFCk6.js" id="asciicast-M2GwBGMsWDJ7WLuW8fgkwFCk6" async="true"></script>
+
 ---
 
 ## 🇧🇷 Sobre
@@ -187,3 +199,16 @@ Entre em
 http://localhost:8000/api/v1/docs
 
 ![](img/swagger.png)
+
+
+### Plus
+
+Se quiser rodar tudo no Linux com um script, digite
+
+```bash
+wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/ca066230e3051842b453ac72c415cb386ebc1925/script.py
+
+source script.sh
+```
+
+<script src="https://asciinema.org/a/M2GwBGMsWDJ7WLuW8fgkwFCk6.js" id="asciicast-M2GwBGMsWDJ7WLuW8fgkwFCk6" async="true"></script>
