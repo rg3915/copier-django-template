@@ -78,19 +78,19 @@ Ideal para quem deseja agilidade na criação de projetos Django com suporte a A
 ### 1. Crie a pasta do seu projeto
 
 ```bash
-mkdir -p ~/projetos/django_ninja_example
+mkdir -p ~/projects/django_ninja_example
 ```
 
 ### 2. Gere seu projeto com o Copier
 
 ```bash
-copier copy https://github.com/rg3915/copier-django-template.git ~/projetos/django_ninja_example
+copier copy https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
 ```
 
 ### 3. Configure o ambiente
 
 ```bash
-cd ~/projetos/django_ninja_example
+cd ~/projects/django_ninja_example
 
 python -m venv .venv
 source .venv/bin/activate
