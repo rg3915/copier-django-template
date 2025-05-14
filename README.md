@@ -212,3 +212,5 @@ source script.sh
 ```
 
 <script src="https://asciinema.org/a/M2GwBGMsWDJ7WLuW8fgkwFCk6.js" id="asciicast-M2GwBGMsWDJ7WLuW8fgkwFCk6" async="true"></script>
+
+[![asciicast](https://asciinema.org/a/M2GwBGMsWDJ7WLuW8fgkwFCk6.svg)](https://asciinema.org/a/M2GwBGMsWDJ7WLuW8fgkwFCk6)
