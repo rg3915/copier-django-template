@@ -99,7 +99,7 @@ http://localhost:8000/api/v1/docs
 If you want to run everything on Linux with a script, type
 
 ```bash
-wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/ca066230e3051842b453ac72c415cb386ebc1925/script.py
+wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/6dea5f85478bc582b86121f2bd8b79aab6518215/script.sh
 
 source script.sh
 ```
@@ -206,7 +206,7 @@ http://localhost:8000/api/v1/docs
 Se quiser rodar tudo no Linux com um script, digite
 
 ```bash
-wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/ca066230e3051842b453ac72c415cb386ebc1925/script.py
+wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/6dea5f85478bc582b86121f2bd8b79aab6518215/script.sh
 
 source script.sh
 ```
