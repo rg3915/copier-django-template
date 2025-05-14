@@ -109,7 +109,7 @@ mkdir -p ~/projects/django_ninja_example
 copier copy https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
 ```
 
-### Result
+### Resultado
 
 ```
 .
