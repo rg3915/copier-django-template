@@ -16,14 +16,23 @@ Use this template to save time setting up new Django projects, especially when w
 
 ## 🇺🇸 Getting Started
 
-### 1. Create your project folder
+### 1. Create your project folder and copier folder
+
 ```bash
 mkdir -p ~/projects/django_ninja_example
+mkdir -p ~/projects/copier_tmp
 ````
 
 ### 2. Generate your project using Copier
 
 ```bash
+cd ~/projects/copier_tmp
+
+python -m venv .venv
+source .venv/bin/activate
+
+pip install copier
+
 copier copy https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
 ```
 
@@ -52,6 +61,8 @@ copier copy https://github.com/rg3915/copier-django-template.git ~/projects/djan
 ### 3. Set up the environment
 
 ```bash
+deactivate  # deactivate copier venv
+
 cd ~/projects/django_ninja_example
 
 python -m venv .venv
@@ -97,15 +108,23 @@ Ideal para quem deseja agilidade na criação de projetos Django com suporte a A
 
 ## 🇧🇷 Como começar
 
-### 1. Crie a pasta do seu projeto
+### 1. Crie a pasta do seu projeto e a pasta do copier
 
 ```bash
 mkdir -p ~/projects/django_ninja_example
-```
+mkdir -p ~/projects/copier_tmp
+````
 
 ### 2. Gere seu projeto com o Copier
 
 ```bash
+cd ~/projects/copier_tmp
+
+python -m venv .venv
+source .venv/bin/activate
+
+pip install copier
+
 copier copy https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
 ```
 
@@ -134,6 +153,8 @@ copier copy https://github.com/rg3915/copier-django-template.git ~/projects/djan
 ### 3. Configure o ambiente
 
 ```bash
+deactivate  # desative a venv do copier
+
 cd ~/projects/django_ninja_example
 
 python -m venv .venv
