@@ -27,6 +27,28 @@ mkdir -p ~/projects/django_ninja_example
 copier copy https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
 ```
 
+### Result
+
+```
+.
+├── apps
+│   ├── api.py
+│   ├── asgi.py
+│   ├── core
+│   │   ├── api.py
+│   │   ├── apps.py
+│   │   ├── __init__.py
+│   │   └── schemas.py
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── env.sample
+├── manage.py
+├── README.md
+└── requirements.txt
+```
+
 ### 3. Set up the environment
 
 ```bash
@@ -85,6 +107,28 @@ mkdir -p ~/projects/django_ninja_example
 
 ```bash
 copier copy https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
+```
+
+### Result
+
+```
+.
+├── apps
+│   ├── api.py
+│   ├── asgi.py
+│   ├── core
+│   │   ├── api.py
+│   │   ├── apps.py
+│   │   ├── __init__.py
+│   │   └── schemas.py
+│   ├── __init__.py
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── env.sample
+├── manage.py
+├── README.md
+└── requirements.txt
 ```
 
 ### 3. Configure o ambiente
