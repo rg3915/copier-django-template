@@ -104,7 +104,7 @@ wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/
 source script.sh
 ```
 
-<script src="https://asciinema.org/a/M2GwBGMsWDJ7WLuW8fgkwFCk6.js" id="asciicast-M2GwBGMsWDJ7WLuW8fgkwFCk6" async="true"></script>
+![](img/copier.gif)
 
 ---
 
@@ -211,6 +211,4 @@ wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/
 source script.sh
 ```
 
-<script src="https://asciinema.org/a/M2GwBGMsWDJ7WLuW8fgkwFCk6.js" id="asciicast-M2GwBGMsWDJ7WLuW8fgkwFCk6" async="true"></script>
-
-[![asciicast](https://asciinema.org/a/M2GwBGMsWDJ7WLuW8fgkwFCk6.svg)](https://asciinema.org/a/M2GwBGMsWDJ7WLuW8fgkwFCk6)
+![](img/copier.gif)
