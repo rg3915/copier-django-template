@@ -58,7 +58,7 @@ copier copy https://github.com/rg3915/copier-django-template.git ~/projects/djan
 └── requirements.txt
 ```
 
-### 3. Set up the environment
+### 3. How to run the new project
 
 ```bash
 deactivate  # deactivate copier venv
@@ -91,6 +91,8 @@ python manage.py runserver
 Enter in
 
 http://localhost:8000/api/v1/docs
+
+![](img/swagger.png)
 
 ---
 
@@ -150,7 +152,7 @@ copier copy https://github.com/rg3915/copier-django-template.git ~/projects/djan
 └── requirements.txt
 ```
 
-### 3. Configure o ambiente
+### 3. Como rodar o novo projeto
 
 ```bash
 deactivate  # desative a venv do copier
@@ -184,3 +186,4 @@ Entre em
 
 http://localhost:8000/api/v1/docs
 
+![](img/swagger.png)
