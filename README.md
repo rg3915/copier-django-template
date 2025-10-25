@@ -35,7 +35,7 @@ source .venv/bin/activate
 
 pip install copier
 
-copier copy https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
+copier copy --vcs-ref=main https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
 ```
 
 ### Result
@@ -201,7 +201,7 @@ source .venv/bin/activate
 
 pip install copier
 
-copier copy https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
+copier copy --vcs-ref=main https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
 ```
 
 ### Resultado
