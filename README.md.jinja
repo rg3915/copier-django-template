@@ -80,7 +80,31 @@ python manage.py ninja_scaffold --generate-from-model crm Person
 - `schemas.py` - Django Ninja schemas (input/output)
 - `api.py` - Complete CRUD routes (GET, POST, PATCH, DELETE)
 - `admin.py` - Django admin interface
-- `apps.py` - App configuration (if doesn't exist)
+- `apps.py` - App configuration with correct project path
+- **Automatically updates** `settings.py` - Adds app to INSTALLED_APPS
+- **Automatically updates** `api.py` - Adds router to main API
+
+**Complete workflow example:**
+
+```bash
+# Enter the project folder
+cd {{ project_name }}
+
+# Create first app with model
+python ../manage.py ninja_scaffold crm Person name:charfield email:emailfield age:integerfield
+python manage.py makemigrations crm
+python manage.py migrate
+
+# Add another model to the same app
+python ../manage.py ninja_scaffold crm Customer name:charfield email:emailfield age:integerfield
+python manage.py makemigrations
+python manage.py migrate
+
+# Create a new app with model
+python ../manage.py ninja_scaffold product Product title:charfield sku:charfield
+python manage.py makemigrations product
+python manage.py migrate
+```
 
 ## pt-br
 
@@ -164,4 +188,28 @@ python manage.py ninja_scaffold --generate-from-model crm Person
 - `schemas.py` - Schemas do Django Ninja (input/output)
 - `api.py` - Rotas CRUD completas (GET, POST, PATCH, DELETE)
 - `admin.py` - Interface de administração Django
-- `apps.py` - Configuração da app (se não existir)
+- `apps.py` - Configuração da app com caminho correto do projeto
+- **Atualiza automaticamente** `settings.py` - Adiciona app em INSTALLED_APPS
+- **Atualiza automaticamente** `api.py` - Adiciona router na API principal
+
+**Exemplo de workflow completo:**
+
+```bash
+# Entrar na pasta do projeto
+cd {{ project_name }}
+
+# Criar primeira app com model
+python ../manage.py ninja_scaffold crm Person name:charfield email:emailfield age:integerfield
+python manage.py makemigrations crm
+python manage.py migrate
+
+# Adicionar outro model na mesma app
+python ../manage.py ninja_scaffold crm Customer name:charfield email:emailfield age:integerfield
+python manage.py makemigrations
+python manage.py migrate
+
+# Criar uma nova app com model
+python ../manage.py ninja_scaffold product Product title:charfield sku:charfield
+python manage.py makemigrations product
+python manage.py migrate
+```
