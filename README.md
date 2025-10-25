@@ -1,5 +1,7 @@
 # copier-django-template
 
+Version: **1.1**
+
 **English 🇺🇸 | Português 🇧🇷**
 
 ## 🇺🇸 About
@@ -93,6 +95,66 @@ Enter in
 http://localhost:8000/api/v1/docs
 
 ![](img/swagger.png)
+
+### Ninja Scaffold Command
+
+This template includes a powerful Django management command to quickly scaffold apps with models and APIs.
+
+**Create a new model with fields:**
+
+```bash
+python manage.py ninja_scaffold crm Person name:charfield email:emailfield age:integerfield
+```
+
+**Create model with relationships:**
+
+```bash
+python manage.py ninja_scaffold crm Provider name:charfield email:charfield person:foreignkey
+```
+
+**Generate schemas, API and admin from existing model:**
+
+```bash
+python manage.py ninja_scaffold --generate-from-model crm Person
+```
+
+**Supported field types:**
+- Basic: `charfield`, `textfield`, `integerfield`, `booleanfield`
+- Numbers/Dates: `decimalfield`, `datefield`, `datetimefield`
+- Special: `emailfield`, `urlfield`, `slugfield`, `uuidfield`
+- Files: `filefield`, `imagefield`
+- Advanced: `jsonfield`, `foreignkey`, `manytomanyfield`, `onetoone`
+
+**The command automatically generates:**
+- `models.py` - Django model with specified fields
+- `schemas.py` - Django Ninja schemas (input/output)
+- `api.py` - Complete CRUD routes (GET, POST, PATCH, DELETE)
+- `admin.py` - Django admin interface
+- `apps.py` - App configuration with correct project path
+- **Automatically updates** `settings.py` - Adds app to INSTALLED_APPS
+- **Automatically updates** `api.py` - Adds router to main API
+
+**Complete workflow example:**
+
+```bash
+# Enter the project folder
+cd apps
+
+# Create first app with model
+python ../manage.py ninja_scaffold crm Person name:charfield email:emailfield age:integerfield
+python manage.py makemigrations crm
+python manage.py migrate
+
+# Add another model to the same app
+python ../manage.py ninja_scaffold crm Customer name:charfield email:emailfield age:integerfield
+python manage.py makemigrations
+python manage.py migrate
+
+# Create a new app with model
+python ../manage.py ninja_scaffold product Product title:charfield sku:charfield
+python manage.py makemigrations product
+python manage.py migrate
+```
 
 ### Plus
 
@@ -200,6 +262,66 @@ http://localhost:8000/api/v1/docs
 
 ![](img/swagger.png)
 
+
+### Comando Ninja Scaffold
+
+Este template inclui um poderoso comando de gerenciamento Django para criar rapidamente apps com models e APIs.
+
+**Criar um novo model com campos:**
+
+```bash
+python manage.py ninja_scaffold crm Person name:charfield email:emailfield age:integerfield
+```
+
+**Criar model com relacionamentos:**
+
+```bash
+python manage.py ninja_scaffold crm Provider name:charfield email:charfield person:foreignkey
+```
+
+**Gerar schemas, API e admin de um model existente:**
+
+```bash
+python manage.py ninja_scaffold --generate-from-model crm Person
+```
+
+**Tipos de campos suportados:**
+- Básicos: `charfield`, `textfield`, `integerfield`, `booleanfield`
+- Números/Datas: `decimalfield`, `datefield`, `datetimefield`
+- Especiais: `emailfield`, `urlfield`, `slugfield`, `uuidfield`
+- Arquivos: `filefield`, `imagefield`
+- Avançados: `jsonfield`, `foreignkey`, `manytomanyfield`, `onetoone`
+
+**O comando gera automaticamente:**
+- `models.py` - Model Django com os campos especificados
+- `schemas.py` - Schemas do Django Ninja (input/output)
+- `api.py` - Rotas CRUD completas (GET, POST, PATCH, DELETE)
+- `admin.py` - Interface de administração Django
+- `apps.py` - Configuração da app com caminho correto do projeto
+- **Atualiza automaticamente** `settings.py` - Adiciona app em INSTALLED_APPS
+- **Atualiza automaticamente** `api.py` - Adiciona router na API principal
+
+**Exemplo de workflow completo:**
+
+```bash
+# Entrar na pasta do projeto
+cd apps
+
+# Criar primeira app com model
+python ../manage.py ninja_scaffold crm Person name:charfield email:emailfield age:integerfield
+python manage.py makemigrations crm
+python manage.py migrate
+
+# Adicionar outro model na mesma app
+python ../manage.py ninja_scaffold crm Customer name:charfield email:emailfield age:integerfield
+python manage.py makemigrations
+python manage.py migrate
+
+# Criar uma nova app com model
+python ../manage.py ninja_scaffold product Product title:charfield sku:charfield
+python manage.py makemigrations product
+python manage.py migrate
+```
 
 ### Plus
 

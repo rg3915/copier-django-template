@@ -1,0 +1,611 @@
+"""
+ninja_scaffold: A Django management command to quickly scaffold Django apps with models and APIs.
+
+Usage:
+python manage.py ninja_scaffold <app_name> <model_name> [field:type_field]...
+python manage.py ninja_scaffold --generate-from-model <app_name> <model_name>
+
+Examples:
+python manage.py ninja_scaffold crm Person name:charfield email:charfield age:integerfield data:datefield
+python manage.py ninja_scaffold crm Provider name:charfield email:charfield person:foreignkey
+python manage.py ninja_scaffold --generate-from-model crm Person
+"""
+
+import re
+from pathlib import Path
+from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
+
+FIELD_TYPE_MAPPING = {
+    'charfield': ('CharField', 'max_length=100'),
+    'textfield': ('TextField', 'null=True, blank=True'),
+    'integerfield': ('IntegerField', 'null=True, blank=True'),
+    'booleanfield': ('BooleanField', 'default=False'),
+    'decimalfield': ('DecimalField', 'decimal_places=2, max_digits=7'),
+    'datefield': ('DateField', 'null=True, blank=True'),
+    'datetimefield': ('DateTimeField', 'auto_now_add=True'),
+    'emailfield': ('EmailField', 'max_length=254'),
+    'urlfield': ('URLField', 'max_length=200, null=True, blank=True'),
+    'slugfield': ('SlugField', 'max_length=50'),
+    'uuidfield': ('UUIDField', 'default=uuid.uuid4, editable=False'),
+    'filefield': ('FileField', 'upload_to="uploads/", null=True, blank=True'),
+    'imagefield': ('ImageField', 'upload_to="images/", null=True, blank=True'),
+    'jsonfield': ('JSONField', 'default=dict, null=True, blank=True'),
+}
+
+
+class Command(BaseCommand):
+    help = 'Scaffold Django apps with models and APIs using Django Ninja'
+
+    def add_arguments(self, parser):
+        parser.add_argument('app_name', type=str, help='Name of the Django app')
+        parser.add_argument('model_name', type=str, help='Name of the model')
+        parser.add_argument(
+            'fields',
+            nargs='*',
+            type=str,
+            help='Fields in format field:type (e.g., name:charfield email:emailfield)'
+        )
+        parser.add_argument(
+            '--generate-from-model',
+            action='store_true',
+            help='Generate schemas, API, and admin from an existing model'
+        )
+
+    def handle(self, *args, **options):
+        app_name = options['app_name']
+        model_name = options['model_name']
+        field_args = options['fields']
+        generate_from_model = options['generate_from_model']
+
+        # Validate names
+        self.validate_app_name(app_name)
+        self.validate_model_name(model_name)
+
+        if generate_from_model:
+            self.generate_from_existing_model(app_name, model_name)
+        else:
+            if not field_args:
+                raise CommandError("Error: At least one field must be provided.")
+
+            fields = self.parse_fields(field_args)
+            self.create_or_update_app_structure(app_name, model_name, fields)
+
+    def validate_app_name(self, name):
+        """Validate the app name follows Django conventions."""
+        if not re.match(r'^[a-z][a-z0-9_]*$', name):
+            raise CommandError(
+                f"App name '{name}' must start with a lowercase letter and contain only lowercase letters, numbers, and underscores."
+            )
+
+    def validate_model_name(self, name):
+        """Validate the model name follows Django conventions."""
+        if not re.match(r'^[A-Z][a-zA-Z0-9]*$', name):
+            raise CommandError(
+                f"Model name '{name}' must start with an uppercase letter and be in CamelCase."
+            )
+
+    def validate_field_name(self, name):
+        """Validate the field name follows Django conventions."""
+        if not re.match(r'^[a-z][a-z0-9_]*$', name):
+            raise CommandError(
+                f"Field name '{name}' must start with a lowercase letter and contain only lowercase letters, numbers, and underscores."
+            )
+
+    def get_project_name(self):
+        """Get the project name from settings.ROOT_URLCONF."""
+        root_urlconf = settings.ROOT_URLCONF
+        return root_urlconf.split('.')[0] if root_urlconf else None
+
+    def get_relation_model_name(self, field_name):
+        """Convert a field name to the appropriate related model name.
+        E.g., 'person' -> 'Person', 'user_profile' -> 'UserProfile'
+        """
+        parts = field_name.split('_')
+        return ''.join(part.capitalize() for part in parts)
+
+    def parse_fields(self, field_args):
+        """Parse field arguments in the format field:type."""
+        fields = []
+        for arg in field_args:
+            parts = arg.split(':')
+            if len(parts) != 2:
+                raise CommandError(f"Invalid field format '{arg}'. Use 'field:type'.")
+            field_name, field_type = parts
+            self.validate_field_name(field_name)
+            fields.append((field_name, field_type))
+        return fields
+
+    def generate_model_class(self, model_name, fields):
+        """Generate a model class for models.py file."""
+        field_imports = set()
+
+        for field_type in [f_type.lower() for _, f_type in fields]:
+            if field_type == 'uuidfield':
+                field_imports.add('import uuid')
+
+        field_lines = []
+        for field_name, field_type in fields:
+            field_type = field_type.lower()
+
+            if field_type == 'foreignkey':
+                related_model = self.get_relation_model_name(field_name)
+                field_lines.append(f"    {field_name} = models.ForeignKey('{related_model}', on_delete=models.CASCADE, null=True, blank=True)")
+            elif field_type == 'manytomanyfield':
+                related_model = self.get_relation_model_name(field_name)
+                field_lines.append(f"    {field_name} = models.ManyToManyField('{related_model}')")
+            elif field_type == 'onetoone':
+                related_model = self.get_relation_model_name(field_name)
+                field_lines.append(f"    {field_name} = models.OneToOneField('{related_model}', on_delete=models.CASCADE, null=True, blank=True)")
+            elif field_type in FIELD_TYPE_MAPPING:
+                django_type, extra_args = FIELD_TYPE_MAPPING[field_type]
+                field_lines.append(f"    {field_name} = models.{django_type}({extra_args})")
+            else:
+                self.stdout.write(self.style.WARNING(f"Warning: Unknown field type '{field_type}'. Using TextField instead."))
+                field_lines.append(f"    {field_name} = models.TextField()")
+
+        first_field = fields[0][0] if fields else "id"
+
+        model_class = '\n'.join([
+            f"class {model_name}(models.Model):",
+            *field_lines,
+            "",
+            "    class Meta:",
+            f"        ordering = ('{first_field}',)",
+            f"        verbose_name = '{model_name.lower()}'",
+            f"        verbose_name_plural = '{model_name.lower()}s'",
+            "",
+            "    def __str__(self):",
+            f"        return f'{{ '{{' }}self.{first_field}{{ '}}' }}'",
+            ""
+        ])
+
+        return model_class, field_imports
+
+    def generate_schema_class(self, model_name, fields):
+        """Generate schema classes for schemas.py file."""
+        field_names = [field_name for field_name, _ in fields]
+
+        output_fields = ['id'] + field_names
+        output_fields_tuple = repr(tuple(output_fields))
+
+        input_fields_tuple = repr(tuple(field_names))
+
+        schema_class = '\n'.join([
+            f"class {model_name}Schema(ModelSchema):",
+            "    class Meta:",
+            f"        model = {model_name}",
+            f"        fields = {output_fields_tuple}",
+            "",
+            f"class {model_name}InputSchema(ModelSchema):",
+            "    class Meta:",
+            f"        model = {model_name}",
+            f"        fields = {input_fields_tuple}",
+            ""
+        ])
+
+        return schema_class
+
+    def generate_router_content(self, model_name, fields):
+        """Generate router content for api.py file."""
+        model_name_lower = model_name.lower()
+        models_plural = f"{model_name_lower}s"
+
+        router_content = '\n'.join([
+            f"# {model_name} routes",
+            f"@router.get('/{models_plural}', response=list[{model_name}Schema], tags=['{models_plural}'])",
+            f"def list_{models_plural}(request):",
+            f"    return {model_name}.objects.all()",
+            "",
+            f"@router.get('/{models_plural}/{{ '{{' }}pk{{ '}}' }}', response={model_name}Schema, tags=['{models_plural}'])",
+            f"def get_{model_name_lower}(request, pk: int):",
+            f"    return get_object_or_404({model_name}, pk=pk)",
+            "",
+            f"@router.post('/{models_plural}', response={{ '{{' }}HTTPStatus.CREATED: {model_name}Schema{{ '}}' }}, tags=['{models_plural}'])",
+            f"def create_{model_name_lower}(request, payload: {model_name}InputSchema):",
+            f"    return {model_name}.objects.create(**payload.dict())",
+            "",
+            f"@router.patch('/{models_plural}/{{ '{{' }}pk{{ '}}' }}', response={model_name}Schema, tags=['{models_plural}'])",
+            f"def update_{model_name_lower}(request, pk: int, payload: {model_name}InputSchema):",
+            f"    instance = get_object_or_404({model_name}, pk=pk)",
+            "    data = payload.dict(exclude_unset=True)",
+            "",
+            "    for attr, value in data.items():",
+            "        setattr(instance, attr, value)",
+            "",
+            "    instance.save()",
+            "    return instance",
+            "",
+            f"@router.delete('/{models_plural}/{{ '{{' }}pk{{ '}}' }}', tags=['{models_plural}'])",
+            f"def delete_{model_name_lower}(request, pk: int):",
+            f"    instance = get_object_or_404({model_name}, pk=pk)",
+            "    instance.delete()",
+            "    return {'success': True}",
+            ""
+        ])
+
+        return router_content
+
+    def generate_admin_class(self, model_name, fields):
+        """Generate admin class for admin.py file."""
+        field_names = [field_name for field_name, _ in fields]
+        first_field = fields[0][0] if fields else "id"
+
+        admin_class = '\n'.join([
+            f"@admin.register({model_name})",
+            f"class {model_name}Admin(admin.ModelAdmin):",
+            f"    list_display = {repr(field_names)}",
+            f"    search_fields = ('{first_field}',)",
+            "    list_filter = ('created_at',)" if 'created_at' in field_names else "",
+            ""
+        ])
+
+        admin_class = admin_class.replace("\n\n\n", "\n\n")
+
+        return admin_class
+
+    def update_models_py(self, app_dir, model_name, fields):
+        """Update models.py file with a new model."""
+        models_file = app_dir / "models.py"
+        model_class, field_imports = self.generate_model_class(model_name, fields)
+
+        if models_file.exists():
+            content = models_file.read_text()
+
+            if f"class {model_name}(models.Model):" in content:
+                self.stdout.write(self.style.WARNING(f"Model {model_name} already exists in {models_file}"))
+                return False
+
+            for import_stmt in field_imports:
+                if import_stmt not in content:
+                    content = content.replace("from django.db import models", f"from django.db import models\n{import_stmt}")
+
+            content += "\n\n" + model_class
+            models_file.write_text(content)
+        else:
+            content = "from django.db import models\n"
+            for import_stmt in field_imports:
+                content += f"{import_stmt}\n"
+            content += "\n\n" + model_class
+            models_file.write_text(content)
+
+        return True
+
+    def update_schemas_py(self, app_dir, model_name, fields):
+        """Update schemas.py file with new schema classes."""
+        schemas_file = app_dir / "schemas.py"
+        schema_class = self.generate_schema_class(model_name, fields)
+
+        if schemas_file.exists():
+            content = schemas_file.read_text()
+
+            if f"class {model_name}Schema" in content:
+                self.stdout.write(self.style.WARNING(f"Schema for {model_name} already exists in {schemas_file}"))
+                return False
+
+            if f"from .models import {model_name}" not in content:
+                if "from .models import " in content:
+                    content = re.sub(r'from .models import (.+)', f'from .models import \\1, {model_name}', content)
+                else:
+                    content += f"\nfrom .models import {model_name}\n"
+
+            content += "\n" + schema_class
+            schemas_file.write_text(content)
+        else:
+            content = '\n'.join([
+                "from ninja import ModelSchema",
+                f"from .models import {model_name}",
+                "",
+                "",
+                schema_class
+            ])
+            schemas_file.write_text(content)
+
+        return True
+
+    def update_api_py(self, app_dir, model_name, fields):
+        """Update api.py file with new router content."""
+        api_file = app_dir / "api.py"
+        router_content = self.generate_router_content(model_name, fields)
+
+        if api_file.exists():
+            content = api_file.read_text()
+
+            if f"def list_{model_name.lower()}s" in content:
+                self.stdout.write(self.style.WARNING(f"Routes for {model_name} already exist in {api_file}"))
+                return False
+
+            model_import = f"from .models import {model_name}"
+            schema_import = f"from .schemas import {model_name}Schema, {model_name}InputSchema"
+
+            if model_name not in re.findall(r'from .models import (.+)', content):
+                if "from .models import " in content:
+                    content = re.sub(r'from .models import (.+)', f'from .models import \\1, {model_name}', content)
+                else:
+                    content = content.replace("from ninja import Router", f"from ninja import Router\n{model_import}")
+
+            if f"{model_name}Schema" not in content:
+                if "from .schemas import " in content:
+                    content = re.sub(r'from .schemas import (.+)',
+                        f'from .schemas import \\1, {model_name}Schema, {model_name}InputSchema', content)
+                else:
+                    content = content.replace("from ninja import Router", f"from ninja import Router\n{schema_import}")
+
+            content += "\n" + router_content
+            api_file.write_text(content)
+        else:
+            content = '\n'.join([
+                "from http import HTTPStatus",
+                "from django.shortcuts import get_object_or_404",
+                "from ninja import Router",
+                f"from .models import {model_name}",
+                f"from .schemas import {model_name}Schema, {model_name}InputSchema",
+                "",
+                "",
+                "router = Router()",
+                "",
+                router_content
+            ])
+            api_file.write_text(content)
+
+        return True
+
+    def update_admin_py(self, app_dir, model_name, fields):
+        """Update admin.py file with new admin class."""
+        admin_file = app_dir / "admin.py"
+        admin_class = self.generate_admin_class(model_name, fields)
+
+        if admin_file.exists():
+            content = admin_file.read_text()
+
+            if f"class {model_name}Admin" in content:
+                self.stdout.write(self.style.WARNING(f"Admin class for {model_name} already exists in {admin_file}"))
+                return False
+
+            if f"from .models import {model_name}" not in content:
+                if "from .models import " in content:
+                    content = re.sub(r'from .models import (.+)', f'from .models import \\1, {model_name}', content)
+                else:
+                    content += f"\nfrom .models import {model_name}\n"
+
+            content += "\n" + admin_class
+            admin_file.write_text(content)
+        else:
+            content = '\n'.join([
+                "from django.contrib import admin",
+                f"from .models import {model_name}",
+                "",
+                "",
+                admin_class
+            ])
+            admin_file.write_text(content)
+
+        return True
+
+    def extract_model_fields(self, app_name, model_name):
+        """Extract fields from an existing model by parsing the models.py file."""
+        # Use BASE_DIR to find the correct path
+        # Apps are inside the project directory
+        project_name = self.get_project_name()
+        base_dir = Path(settings.BASE_DIR)
+        models_file = base_dir / project_name / app_name / "models.py"
+
+        if not models_file.exists():
+            raise CommandError(f"File {models_file} not found.")
+
+        try:
+            content = models_file.read_text()
+
+            pattern = rf"class\s+{model_name}\s*\([^)]*\):(.+?)(?:class\s+\w+|\Z)"
+            match = re.search(pattern, content, re.DOTALL)
+
+            if not match:
+                raise CommandError(f"Model '{model_name}' not found in {models_file}")
+
+            model_content = match.group(1)
+
+            field_pattern = r"^\s*(\w+)\s*=\s*models\.(\w+)\s*\("
+            field_matches = re.finditer(field_pattern, model_content, re.MULTILINE)
+
+            fields = []
+            for match in field_matches:
+                field_name = match.group(1)
+                field_type = match.group(2).lower()
+
+                if field_name not in ['id', 'objects']:
+                    fields.append((field_name, field_type))
+
+            if not fields:
+                self.stdout.write(self.style.WARNING(f"No fields found in model '{model_name}'."))
+            else:
+                self.stdout.write(self.style.SUCCESS(f"Extracted {len(fields)} fields from {models_file}:"))
+                for name, field_type in fields:
+                    self.stdout.write(f"  - {name}: {field_type}")
+
+            return fields
+
+        except Exception as e:
+            raise CommandError(f"Failed to parse model file: {str(e)}")
+
+    def generate_from_existing_model(self, app_name, model_name):
+        """Generate schemas, API, and admin for an existing model."""
+        self.stdout.write(f"Generating from existing model '{model_name}' in app '{app_name}'...")
+
+        fields = self.extract_model_fields(app_name, model_name)
+
+        if not fields:
+            self.stdout.write(self.style.WARNING(f"No fields found for model '{model_name}' in app '{app_name}'."))
+            return
+
+        # Use BASE_DIR to find the correct path
+        # Apps are inside the project directory
+        project_name = self.get_project_name()
+        base_dir = Path(settings.BASE_DIR)
+        app_dir = base_dir / project_name / app_name
+
+        schemas_updated = self.update_schemas_py(app_dir, model_name, fields)
+        api_updated = self.update_api_py(app_dir, model_name, fields)
+        admin_updated = self.update_admin_py(app_dir, model_name, fields)
+
+        self.stdout.write(self.style.SUCCESS(f"Successfully generated files for model '{model_name}' in app '{app_name}':"))
+
+        app_path = f"{project_name}/{app_name}"
+        if schemas_updated:
+            self.stdout.write(f"  - {app_path}/schemas.py (updated)")
+        if api_updated:
+            self.stdout.write(f"  - {app_path}/api.py (updated)")
+        if admin_updated:
+            self.stdout.write(f"  - {app_path}/admin.py (updated)")
+
+    def update_project_settings(self, app_name):
+        """Add app to INSTALLED_APPS in settings.py."""
+        project_name = self.get_project_name()
+        if not project_name:
+            self.stdout.write(self.style.WARNING("Could not determine project name. Skipping settings.py update."))
+            return False
+
+        # Use BASE_DIR to find the correct path
+        base_dir = Path(settings.BASE_DIR)
+        settings_file = base_dir / project_name / "settings.py"
+
+        if not settings_file.exists():
+            self.stdout.write(self.style.WARNING(f"Settings file {settings_file} not found. Skipping settings.py update."))
+            return False
+
+        content = settings_file.read_text()
+        app_path = f"'{project_name}.{app_name}'"
+
+        if app_path in content:
+            self.stdout.write(self.style.WARNING(f"App {app_path} already in INSTALLED_APPS"))
+            return False
+
+        # Find INSTALLED_APPS and add the new app
+        if "# my apps" in content:
+            # Add after the "# my apps" comment
+            content = content.replace("# my apps", f"# my apps\n    {app_path},")
+            settings_file.write_text(content)
+            self.stdout.write(self.style.SUCCESS(f"Added {app_path} to INSTALLED_APPS in {settings_file}"))
+            return True
+        elif "INSTALLED_APPS = [" in content:
+            # Add at the end of INSTALLED_APPS
+            pattern = r'(INSTALLED_APPS\s*=\s*\[.*?)(\])'
+            replacement = rf'\1    {app_path},\n\2'
+            new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+            settings_file.write_text(new_content)
+            self.stdout.write(self.style.SUCCESS(f"Added {app_path} to INSTALLED_APPS in {settings_file}"))
+            return True
+        else:
+            self.stdout.write(self.style.WARNING("Could not find INSTALLED_APPS in settings.py"))
+            return False
+
+    def update_project_api(self, app_name):
+        """Add router to main api.py file."""
+        project_name = self.get_project_name()
+        if not project_name:
+            self.stdout.write(self.style.WARNING("Could not determine project name. Skipping api.py update."))
+            return False
+
+        # Use BASE_DIR to find the correct path
+        base_dir = Path(settings.BASE_DIR)
+        api_file = base_dir / project_name / "api.py"
+
+        if not api_file.exists():
+            self.stdout.write(self.style.WARNING(f"API file {api_file} not found. Skipping api.py update."))
+            return False
+
+        content = api_file.read_text()
+        router_line = f"api.add_router('', '{project_name}.{app_name}.api.router')"
+
+        if f"{project_name}.{app_name}.api.router" in content:
+            self.stdout.write(self.style.WARNING(f"Router for {app_name} already exists in {api_file}"))
+            return False
+
+        # Add router line before the comment "# Adiciona mais apps aqui" or at the end
+        if "# Adiciona mais apps aqui" in content:
+            content = content.replace("# Adiciona mais apps aqui", f"{router_line}\n# Adiciona mais apps aqui")
+        else:
+            content += f"\n{router_line}\n"
+
+        api_file.write_text(content)
+        self.stdout.write(self.style.SUCCESS(f"Added router for {app_name} to {api_file}"))
+        return True
+
+    def update_app_config(self, app_dir, app_name):
+        """Update apps.py with correct name format."""
+        project_name = self.get_project_name()
+        if not project_name:
+            self.stdout.write(self.style.WARNING("Could not determine project name. Using app_name only in apps.py"))
+            full_name = app_name
+        else:
+            full_name = f"{project_name}.{app_name}"
+
+        apps_file = app_dir / "apps.py"
+        if not apps_file.exists():
+            return False
+
+        content = apps_file.read_text()
+        # Update the name attribute to use project_name.app_name format
+        content = re.sub(
+            r"(name\s*=\s*')[^']*(')",
+            rf"\1{full_name}\2",
+            content
+        )
+        apps_file.write_text(content)
+        self.stdout.write(self.style.SUCCESS(f"Updated apps.py with name = '{full_name}'"))
+        return True
+
+    def create_or_update_app_structure(self, app_name, model_name, fields):
+        """Create or update the app directory structure and files."""
+        # Use BASE_DIR to find the correct path
+        # Apps should be created inside the project directory (where settings.py is)
+        project_name = self.get_project_name()
+        base_dir = Path(settings.BASE_DIR)
+        app_dir = base_dir / project_name / app_name
+        app_dir.mkdir(exist_ok=True)
+
+        init_file = app_dir / "__init__.py"
+        init_file.touch()
+
+        models_updated = self.update_models_py(app_dir, model_name, fields)
+        schemas_updated = self.update_schemas_py(app_dir, model_name, fields)
+        api_updated = self.update_api_py(app_dir, model_name, fields)
+        admin_updated = self.update_admin_py(app_dir, model_name, fields)
+
+        apps_file = app_dir / "apps.py"
+        app_config_created = False
+        if not apps_file.exists():
+            project_name = self.get_project_name()
+            full_name = f"{project_name}.{app_name}" if project_name else app_name
+            class_name = ''.join(word.capitalize() for word in app_name.split('_'))
+            apps_content = '\n'.join([
+                "from django.apps import AppConfig",
+                "",
+                "",
+                f"class {class_name}Config(AppConfig):",
+                "    default_auto_field = 'django.db.models.BigAutoField'",
+                f"    name = '{full_name}'",
+                "",
+                "    def ready(self):",
+                "        pass  # Import signals and other initialization here",
+                ""
+            ])
+            apps_file.write_text(apps_content)
+            app_config_created = True
+        else:
+            # Update existing apps.py with correct name format
+            self.update_app_config(app_dir, app_name)
+
+        # Update project-level files
+        self.update_project_settings(app_name)
+        self.update_project_api(app_name)
+
+        action = 'updated' if any([models_updated, schemas_updated, api_updated, admin_updated]) else 'added'
+        self.stdout.write(self.style.SUCCESS(f"Successfully {action} model '{model_name}' to app '{app_name}'"))
+        self.stdout.write("Files:")
+        app_path = f"{project_name}/{app_name}"
+        self.stdout.write(f"  - {app_path}/__init__.py")
+        self.stdout.write(f"  - {app_path}/models.py")
+        self.stdout.write(f"  - {app_path}/schemas.py")
+        self.stdout.write(f"  - {app_path}/api.py")
+        self.stdout.write(f"  - {app_path}/admin.py")
+        self.stdout.write(f"  - {app_path}/apps.py")
