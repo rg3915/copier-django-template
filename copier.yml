@@ -3,8 +3,6 @@ project_name:
     help: What is your project name?
     default: apps
 
-_templates_suffix: ".jinja"
-
 _exclude:
     - "copier.yaml"
     - "copier.yml"
@@ -15,3 +13,4 @@ _exclude:
     - ".DS_Store"
     - ".svn"
     - ".venv"
+    - "README.md"
