@@ -385,8 +385,10 @@ class Command(BaseCommand):
     def extract_model_fields(self, app_name, model_name):
         """Extract fields from an existing model by parsing the models.py file."""
         # Use BASE_DIR to find the correct path
+        # Apps are inside the project directory
+        project_name = self.get_project_name()
         base_dir = Path(settings.BASE_DIR)
-        models_file = base_dir / app_name / "models.py"
+        models_file = base_dir / project_name / app_name / "models.py"
 
         if not models_file.exists():
             raise CommandError(f"File {models_file} not found.")
@@ -436,8 +438,10 @@ class Command(BaseCommand):
             return
 
         # Use BASE_DIR to find the correct path
+        # Apps are inside the project directory
+        project_name = self.get_project_name()
         base_dir = Path(settings.BASE_DIR)
-        app_dir = base_dir / app_name
+        app_dir = base_dir / project_name / app_name
 
         schemas_updated = self.update_schemas_py(app_dir, model_name, fields)
         api_updated = self.update_api_py(app_dir, model_name, fields)
@@ -445,12 +449,13 @@ class Command(BaseCommand):
 
         self.stdout.write(self.style.SUCCESS(f"Successfully generated files for model '{model_name}' in app '{app_name}':"))
 
+        app_path = f"{project_name}/{app_name}"
         if schemas_updated:
-            self.stdout.write(f"  - {app_name}/schemas.py (updated)")
+            self.stdout.write(f"  - {app_path}/schemas.py (updated)")
         if api_updated:
-            self.stdout.write(f"  - {app_name}/api.py (updated)")
+            self.stdout.write(f"  - {app_path}/api.py (updated)")
         if admin_updated:
-            self.stdout.write(f"  - {app_name}/admin.py (updated)")
+            self.stdout.write(f"  - {app_path}/admin.py (updated)")
 
     def update_project_settings(self, app_name):
         """Add app to INSTALLED_APPS in settings.py."""
@@ -552,8 +557,10 @@ class Command(BaseCommand):
     def create_or_update_app_structure(self, app_name, model_name, fields):
         """Create or update the app directory structure and files."""
         # Use BASE_DIR to find the correct path
+        # Apps should be created inside the project directory (where settings.py is)
+        project_name = self.get_project_name()
         base_dir = Path(settings.BASE_DIR)
-        app_dir = base_dir / app_name
+        app_dir = base_dir / project_name / app_name
         app_dir.mkdir(exist_ok=True)
 
         init_file = app_dir / "__init__.py"
@@ -595,9 +602,10 @@ class Command(BaseCommand):
         action = 'updated' if any([models_updated, schemas_updated, api_updated, admin_updated]) else 'added'
         self.stdout.write(self.style.SUCCESS(f"Successfully {action} model '{model_name}' to app '{app_name}'"))
         self.stdout.write("Files:")
-        self.stdout.write(f"  - {app_name}/__init__.py")
-        self.stdout.write(f"  - {app_name}/models.py")
-        self.stdout.write(f"  - {app_name}/schemas.py")
-        self.stdout.write(f"  - {app_name}/api.py")
-        self.stdout.write(f"  - {app_name}/admin.py")
-        self.stdout.write(f"  - {app_name}/apps.py")
+        app_path = f"{project_name}/{app_name}"
+        self.stdout.write(f"  - {app_path}/__init__.py")
+        self.stdout.write(f"  - {app_path}/models.py")
+        self.stdout.write(f"  - {app_path}/schemas.py")
+        self.stdout.write(f"  - {app_path}/api.py")
+        self.stdout.write(f"  - {app_path}/admin.py")
+        self.stdout.write(f"  - {app_path}/apps.py")
