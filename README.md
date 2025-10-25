@@ -35,7 +35,13 @@ source .venv/bin/activate
 
 pip install copier
 
-copier copy --vcs-ref=main https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
+# copier copy --vcs-ref=main https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
+
+git clone https://github.com/rg3915/copier-django-template.git /tmp/copier-django-template
+
+cd /tmp/copier-django-template
+
+copier copy --vcs-ref=main . ~/projects/django_ninja_example
 ```
 
 > **Important:** Use `--vcs-ref=main` to get the latest version from the main branch. Without this flag, Copier tries to use Git tags, which may not include recent updates like the `ninja_scaffold` command.
@@ -163,7 +169,7 @@ python manage.py migrate
 If you want to run everything on Linux with a script, type
 
 ```bash
-wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/6dea5f85478bc582b86121f2bd8b79aab6518215/script.sh
+wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/22ca5e73ff5db83a2d48fd33dbc57bc83e2c8611/script.sh
 
 source script.sh
 ```
@@ -332,7 +338,7 @@ python manage.py migrate
 Se quiser rodar tudo no Linux com um script, digite
 
 ```bash
-wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/6dea5f85478bc582b86121f2bd8b79aab6518215/script.sh
+wget https://gist.githubusercontent.com/rg3915/7842b05ff93d9fd87f977d3c0b9300d3/raw/22ca5e73ff5db83a2d48fd33dbc57bc83e2c8611/script.sh
 
 source script.sh
 ```
