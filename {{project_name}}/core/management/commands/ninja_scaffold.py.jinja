@@ -10,7 +10,7 @@ python manage.py ninja_scaffold crm Person name:charfield email:charfield age:in
 python manage.py ninja_scaffold crm Provider name:charfield email:charfield person:foreignkey
 python manage.py ninja_scaffold --generate-from-model crm Person
 """
-
+# {{project_name}}
 import re
 from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
