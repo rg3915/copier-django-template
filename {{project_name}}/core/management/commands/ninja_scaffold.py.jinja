@@ -384,7 +384,9 @@ class Command(BaseCommand):
 
     def extract_model_fields(self, app_name, model_name):
         """Extract fields from an existing model by parsing the models.py file."""
-        models_file = Path(app_name) / "models.py"
+        # Use BASE_DIR to find the correct path
+        base_dir = Path(settings.BASE_DIR)
+        models_file = base_dir / app_name / "models.py"
 
         if not models_file.exists():
             raise CommandError(f"File {models_file} not found.")
@@ -433,7 +435,9 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING(f"No fields found for model '{model_name}' in app '{app_name}'."))
             return
 
-        app_dir = Path(app_name)
+        # Use BASE_DIR to find the correct path
+        base_dir = Path(settings.BASE_DIR)
+        app_dir = base_dir / app_name
 
         schemas_updated = self.update_schemas_py(app_dir, model_name, fields)
         api_updated = self.update_api_py(app_dir, model_name, fields)
@@ -455,7 +459,10 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Could not determine project name. Skipping settings.py update."))
             return False
 
-        settings_file = Path(project_name) / "settings.py"
+        # Use BASE_DIR to find the correct path
+        base_dir = Path(settings.BASE_DIR)
+        settings_file = base_dir / project_name / "settings.py"
+
         if not settings_file.exists():
             self.stdout.write(self.style.WARNING(f"Settings file {settings_file} not found. Skipping settings.py update."))
             return False
@@ -493,7 +500,10 @@ class Command(BaseCommand):
             self.stdout.write(self.style.WARNING("Could not determine project name. Skipping api.py update."))
             return False
 
-        api_file = Path(project_name) / "api.py"
+        # Use BASE_DIR to find the correct path
+        base_dir = Path(settings.BASE_DIR)
+        api_file = base_dir / project_name / "api.py"
+
         if not api_file.exists():
             self.stdout.write(self.style.WARNING(f"API file {api_file} not found. Skipping api.py update."))
             return False
@@ -541,7 +551,9 @@ class Command(BaseCommand):
 
     def create_or_update_app_structure(self, app_name, model_name, fields):
         """Create or update the app directory structure and files."""
-        app_dir = Path(app_name)
+        # Use BASE_DIR to find the correct path
+        base_dir = Path(settings.BASE_DIR)
+        app_dir = base_dir / app_name
         app_dir.mkdir(exist_ok=True)
 
         init_file = app_dir / "__init__.py"
