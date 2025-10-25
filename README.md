@@ -38,6 +38,8 @@ pip install copier
 copier copy --vcs-ref=main https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
 ```
 
+> **Important:** Use `--vcs-ref=main` to get the latest version from the main branch. Without this flag, Copier tries to use Git tags, which may not include recent updates like the `ninja_scaffold` command.
+
 ### Result
 
 ```
@@ -203,6 +205,8 @@ pip install copier
 
 copier copy --vcs-ref=main https://github.com/rg3915/copier-django-template.git ~/projects/django_ninja_example
 ```
+
+> **Important:** Use `--vcs-ref=main` to get the latest version from the main branch. Without this flag, Copier tries to use Git tags, which may not include recent updates like the `ninja_scaffold` command.
 
 ### Resultado
 
