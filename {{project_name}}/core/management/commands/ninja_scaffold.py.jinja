@@ -14,6 +14,7 @@ python manage.py ninja_scaffold --generate-from-model crm Person
 import re
 from pathlib import Path
 from django.core.management.base import BaseCommand, CommandError
+from django.conf import settings
 
 FIELD_TYPE_MAPPING = {
     'charfield': ('CharField', 'max_length=100'),
@@ -90,6 +91,11 @@ class Command(BaseCommand):
             raise CommandError(
                 f"Field name '{name}' must start with a lowercase letter and contain only lowercase letters, numbers, and underscores."
             )
+
+    def get_project_name(self):
+        """Get the project name from settings.ROOT_URLCONF."""
+        root_urlconf = settings.ROOT_URLCONF
+        return root_urlconf.split('.')[0] if root_urlconf else None
 
     def get_relation_model_name(self, field_name):
         """Convert a field name to the appropriate related model name.
@@ -442,6 +448,97 @@ class Command(BaseCommand):
         if admin_updated:
             self.stdout.write(f"  - {app_name}/admin.py (updated)")
 
+    def update_project_settings(self, app_name):
+        """Add app to INSTALLED_APPS in settings.py."""
+        project_name = self.get_project_name()
+        if not project_name:
+            self.stdout.write(self.style.WARNING("Could not determine project name. Skipping settings.py update."))
+            return False
+
+        settings_file = Path(project_name) / "settings.py"
+        if not settings_file.exists():
+            self.stdout.write(self.style.WARNING(f"Settings file {settings_file} not found. Skipping settings.py update."))
+            return False
+
+        content = settings_file.read_text()
+        app_path = f"'{project_name}.{app_name}'"
+
+        if app_path in content:
+            self.stdout.write(self.style.WARNING(f"App {app_path} already in INSTALLED_APPS"))
+            return False
+
+        # Find INSTALLED_APPS and add the new app
+        if "# my apps" in content:
+            # Add after the "# my apps" comment
+            content = content.replace("# my apps", f"# my apps\n    {app_path},")
+            settings_file.write_text(content)
+            self.stdout.write(self.style.SUCCESS(f"Added {app_path} to INSTALLED_APPS in {settings_file}"))
+            return True
+        elif "INSTALLED_APPS = [" in content:
+            # Add at the end of INSTALLED_APPS
+            pattern = r'(INSTALLED_APPS\s*=\s*\[.*?)(\])'
+            replacement = rf'\1    {app_path},\n\2'
+            new_content = re.sub(pattern, replacement, content, flags=re.DOTALL)
+            settings_file.write_text(new_content)
+            self.stdout.write(self.style.SUCCESS(f"Added {app_path} to INSTALLED_APPS in {settings_file}"))
+            return True
+        else:
+            self.stdout.write(self.style.WARNING("Could not find INSTALLED_APPS in settings.py"))
+            return False
+
+    def update_project_api(self, app_name):
+        """Add router to main api.py file."""
+        project_name = self.get_project_name()
+        if not project_name:
+            self.stdout.write(self.style.WARNING("Could not determine project name. Skipping api.py update."))
+            return False
+
+        api_file = Path(project_name) / "api.py"
+        if not api_file.exists():
+            self.stdout.write(self.style.WARNING(f"API file {api_file} not found. Skipping api.py update."))
+            return False
+
+        content = api_file.read_text()
+        router_line = f"api.add_router('', '{project_name}.{app_name}.api.router')"
+
+        if f"{project_name}.{app_name}.api.router" in content:
+            self.stdout.write(self.style.WARNING(f"Router for {app_name} already exists in {api_file}"))
+            return False
+
+        # Add router line before the comment "# Adiciona mais apps aqui" or at the end
+        if "# Adiciona mais apps aqui" in content:
+            content = content.replace("# Adiciona mais apps aqui", f"{router_line}\n# Adiciona mais apps aqui")
+        else:
+            content += f"\n{router_line}\n"
+
+        api_file.write_text(content)
+        self.stdout.write(self.style.SUCCESS(f"Added router for {app_name} to {api_file}"))
+        return True
+
+    def update_app_config(self, app_dir, app_name):
+        """Update apps.py with correct name format."""
+        project_name = self.get_project_name()
+        if not project_name:
+            self.stdout.write(self.style.WARNING("Could not determine project name. Using app_name only in apps.py"))
+            full_name = app_name
+        else:
+            full_name = f"{project_name}.{app_name}"
+
+        apps_file = app_dir / "apps.py"
+        if not apps_file.exists():
+            return False
+
+        content = apps_file.read_text()
+        # Update the name attribute to use project_name.app_name format
+        content = re.sub(
+            r"(name\s*=\s*')[^']*(')",
+            rf"\1{full_name}\2",
+            content
+        )
+        apps_file.write_text(content)
+        self.stdout.write(self.style.SUCCESS(f"Updated apps.py with name = '{full_name}'"))
+        return True
+
     def create_or_update_app_structure(self, app_name, model_name, fields):
         """Create or update the app directory structure and files."""
         app_dir = Path(app_name)
@@ -456,7 +553,10 @@ class Command(BaseCommand):
         admin_updated = self.update_admin_py(app_dir, model_name, fields)
 
         apps_file = app_dir / "apps.py"
+        app_config_created = False
         if not apps_file.exists():
+            project_name = self.get_project_name()
+            full_name = f"{project_name}.{app_name}" if project_name else app_name
             class_name = ''.join(word.capitalize() for word in app_name.split('_'))
             apps_content = '\n'.join([
                 "from django.apps import AppConfig",
@@ -464,13 +564,21 @@ class Command(BaseCommand):
                 "",
                 f"class {class_name}Config(AppConfig):",
                 "    default_auto_field = 'django.db.models.BigAutoField'",
-                f"    name = '{app_name}'",
+                f"    name = '{full_name}'",
                 "",
                 "    def ready(self):",
                 "        pass  # Import signals and other initialization here",
                 ""
             ])
             apps_file.write_text(apps_content)
+            app_config_created = True
+        else:
+            # Update existing apps.py with correct name format
+            self.update_app_config(app_dir, app_name)
+
+        # Update project-level files
+        self.update_project_settings(app_name)
+        self.update_project_api(app_name)
 
         action = 'updated' if any([models_updated, schemas_updated, api_updated, admin_updated]) else 'added'
         self.stdout.write(self.style.SUCCESS(f"Successfully {action} model '{model_name}' to app '{app_name}'"))
